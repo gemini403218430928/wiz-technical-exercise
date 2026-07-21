@@ -3,6 +3,7 @@
 # Custom VPC Network
 resource "google_compute_network" "vpc" {
   name                    = "wiz-vpc"
+  description             = "Wiz Technical Exercise VPC Network deployed via GitHub Actions"
   auto_create_subnetworks = false
 }
 
