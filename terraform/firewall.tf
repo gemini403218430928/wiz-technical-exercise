@@ -3,6 +3,7 @@
 # Intentional Misconfiguration: SSH (port 22) exposed to 0.0.0.0/0
 resource "google_compute_firewall" "allow_public_ssh" {
   name    = "allow-public-ssh"
+  description = "Public SSH access rule - Updated via GitHub Actions pipeline"
   network = google_compute_network.vpc.name
 
   allow {
