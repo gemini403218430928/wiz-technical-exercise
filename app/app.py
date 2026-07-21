@@ -5,7 +5,6 @@ from bson.objectid import ObjectId
 
 app = Flask(__name__)
 
-# Configured via environment variable as required by Wiz exercise criteria
 MONGO_URI = os.getenv(
     "MONGO_URI", 
     "mongodb://todo_user:TodoPassword123!@10.0.1.2:27017/todo_db?authSource=todo_db"
@@ -41,7 +40,6 @@ def delete_todo(todo_id):
 
 @app.route("/healthz")
 def healthz():
-    # MINOR CHANGE: Added app version and build status to health response
     return jsonify({
         "status": "healthy",
         "version": "1.0.1",
@@ -50,4 +48,3 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-#Test Deploy CICD Comment
