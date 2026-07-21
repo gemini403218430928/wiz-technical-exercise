@@ -41,7 +41,12 @@ def delete_todo(todo_id):
 
 @app.route("/healthz")
 def healthz():
-    return jsonify({"status": "healthy"}), 200
+    # MINOR CHANGE: Added app version and build status to health response
+    return jsonify({
+        "status": "healthy",
+        "version": "1.0.1",
+        "deployed_via": "github_actions"
+    }), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
