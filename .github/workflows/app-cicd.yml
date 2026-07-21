@@ -51,8 +51,6 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           docker push us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}
-          docker tag us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
-          docker push us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
 
       - name: Get GKE Credentials
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -65,4 +63,5 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           kubectl apply -f k8s-app.yaml
-          kubectl rollout restart deployment/wiz-web-app
+          kubectl set image deployment/wiz-web-app wiz-web-app=us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}
+          kubectl rollout status deployment/wiz-web-app
