@@ -28,7 +28,8 @@ jobs:
         run: |
           docker build -t us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} ./app
 
-      - name: Run Trivy Vulnerability Scanner (Table View)
+      # 1. Table output in terminal logs for quick review
+      - name: Run Trivy Vulnerability Scanner (Table Output)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}'
@@ -37,6 +38,23 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
 
+      # 2. Filesystem SARIF Scan (maps app dependencies to app/requirements.txt in Git)
+      - name: Run Trivy FS Scanner for App Dependencies
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'app/'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+
+      - name: Upload App Dependency SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-app-dependencies'
+
+      # 3. Deployment steps
       - name: Authenticate to GCP via Workload Identity Federation
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: google-github-actions/auth@v1
@@ -66,16 +84,3 @@ jobs:
           kubectl apply -f k8s-app.yaml
           kubectl set image deployment/wiz-web-app *=us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}
           kubectl rollout status deployment/wiz-web-app
-
-      - name: Run Trivy Scanner (SARIF Output)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
