@@ -40,6 +40,7 @@ spec:
       containers:
         - name: web-app
           image: us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
