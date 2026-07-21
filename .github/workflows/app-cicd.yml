@@ -63,5 +63,5 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           kubectl apply -f k8s-app.yaml
-          kubectl set image deployment/wiz-web-app wiz-web-app=us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}
+          kubectl set image deployment/wiz-web-app *=us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}
           kubectl rollout status deployment/wiz-web-app
