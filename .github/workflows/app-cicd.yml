@@ -6,6 +6,11 @@ on:
     paths:
       - 'app/**'
       - 'k8s-app.yaml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'app/**'
+      - 'k8s-app.yaml'
 
 permissions:
   contents: read
@@ -49,9 +54,10 @@ jobs:
           docker tag us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
           docker push us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
 
-      - name: Deploy to Private GKE Cluster
+      - name: Install GKE Auth Plugin & Deploy to GKE
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
+          sudo apt-get update && sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
           gcloud container clusters get-credentials wiz-gke-cluster --region us-central1 --project clgcporg10-185
           kubectl apply -f k8s-app.yaml
           kubectl rollout restart deployment/wiz-web-app
