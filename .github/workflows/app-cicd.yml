@@ -1,0 +1,62 @@
+name: "2. Application Container CI/CD Pipeline"
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'app/**'
+      - 'k8s-app.yaml'
+
+permissions:
+  contents: read
+  id-token: write # Required for WIF keyless auth
+
+jobs:
+  build-scan-deploy:
+    name: "Build, Scan, Push & Deploy"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # 1. Requirement: Build container image
+      - name: Build Local Container Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} ./app
+
+      # 2. Requirement: Container scan prior to deployment
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      # 3. Keyless GCP Auth via Workload Identity Federation
+      - name: Authenticate to GCP
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/wiz-github-pool/providers/wiz-github-provider'
+          service_account: 'wiz-vm-sa@clgcporg10-185.iam.gserviceaccount.com'
+
+      # 4. Requirement: Push container to registry
+      - name: Configure Docker CLI for GCP
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Push Image to Google Artifact Registry
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          docker push us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}
+          docker tag us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
+          docker push us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
+
+      # 5. Requirement: Trigger Kubernetes deployment
+      - name: Deploy to Private GKE Cluster
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          gcloud container clusters get-credentials wiz-gke-cluster --region us-central1 --project clgcporg10-185
+          kubectl apply -f k8s-app.yaml
+          kubectl rollout restart deployment/wiz-web-app

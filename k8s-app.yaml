@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wiz-app-sa
+  namespace: default
+
+---
+# INTENTIONAL MISCONFIGURATION: Assign Cluster-Admin to Pod SA
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wiz-app-cluster-admin-binding
+subjects:
+  - kind: ServiceAccount
+    name: wiz-app-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiz-web-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wiz-web-app
+  template:
+    metadata:
+      labels:
+        app: wiz-web-app
+    spec:
+      serviceAccountName: wiz-app-sa
+      containers:
+        - name: web-app
+          image: us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_URI
+              value: "mongodb://todo_user:TodoPassword123!@10.0.1.2:27017/todo_db?authSource=todo_db"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiz-web-service
+  namespace: default
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 5000
+  selector:
+    app: wiz-web-app
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wiz-web-ingress
+  namespace: default
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: wiz-web-service
+                port:
+                  number: 80
