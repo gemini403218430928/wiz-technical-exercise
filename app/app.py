@@ -42,8 +42,8 @@ def delete_todo(todo_id):
 def healthz():
     return jsonify({
         "status": "healthy",
-        "version": "1.0.1",
-        "deployed_via": "github_actions"
+        "version": "1.0.2",
+        "deployed_via": "github_actions",
     }), 200
 
 if __name__ == "__main__":
