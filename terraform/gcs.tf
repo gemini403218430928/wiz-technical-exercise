@@ -7,6 +7,11 @@ resource "google_storage_bucket" "backup_bucket" {
   force_destroy            = true
   public_access_prevention = "inherited" # Permits public access
 
+  labels = {
+    environment = "wiz-demo"
+    managed_by  = "github-actions"
+  }
+
 }
 
 # Intentional Misconfiguration: Publicly readable and listable bucket
