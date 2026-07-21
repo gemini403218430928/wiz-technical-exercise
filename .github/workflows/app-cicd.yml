@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  security-events: write
 
 jobs:
   build-scan-deploy:
@@ -27,7 +28,7 @@ jobs:
         run: |
           docker build -t us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} ./app
 
-      - name: Run Trivy Vulnerability Scanner
+      - name: Run Trivy Vulnerability Scanner (Table View)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}'
