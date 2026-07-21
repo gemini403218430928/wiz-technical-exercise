@@ -1,4 +1,3 @@
-# Ignore Terraform binaries and local state
 .terraform/
 *.tfstate
 *.tfstate.backup

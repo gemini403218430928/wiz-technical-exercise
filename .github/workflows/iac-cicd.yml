@@ -12,7 +12,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # Required for WIF keyless auth
+  id-token: write
   security-events: write
 
 jobs:
@@ -22,7 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Requirement: Pipeline security scanning prior to deployment
       - name: Run Checkov IaC Scanner
         uses: bridgecrewio/checkov-action@master
         with:
@@ -46,16 +45,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Keyless GCP Auth via Workload Identity Federation
-      - name: Authenticate to GCP
+      - name: Authenticate to GCP via Workload Identity Federation
         uses: google-github-actions/auth@v1
         with:
-          workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/wiz-github-pool/providers/wiz-github-provider'
+          workload_identity_provider: 'projects/1009564646348/locations/global/workloadIdentityPools/wiz-github-pool/providers/wiz-github-provider'
           service_account: 'wiz-vm-sa@clgcporg10-185.iam.gserviceaccount.com'
 
       - uses: hashicorp/setup-terraform@v2
 
-      # Requirement: CI/CD pipeline to deploy exercise as IaC
       - name: Terraform Init & Apply
         run: |
           cd terraform/

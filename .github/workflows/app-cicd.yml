@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # Required for WIF keyless auth
+  id-token: write
 
 jobs:
   build-scan-deploy:
@@ -18,12 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 1. Requirement: Build container image
       - name: Build Local Container Image
         run: |
           docker build -t us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} ./app
 
-      # 2. Requirement: Container scan prior to deployment
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -33,15 +31,13 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
 
-      # 3. Keyless GCP Auth via Workload Identity Federation
-      - name: Authenticate to GCP
+      - name: Authenticate to GCP via Workload Identity Federation
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: google-github-actions/auth@v1
         with:
-          workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/wiz-github-pool/providers/wiz-github-provider'
+          workload_identity_provider: 'projects/1009564646348/locations/global/workloadIdentityPools/wiz-github-pool/providers/wiz-github-provider'
           service_account: 'wiz-vm-sa@clgcporg10-185.iam.gserviceaccount.com'
 
-      # 4. Requirement: Push container to registry
       - name: Configure Docker CLI for GCP
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -53,7 +49,6 @@ jobs:
           docker tag us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
           docker push us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:v1
 
-      # 5. Requirement: Trigger Kubernetes deployment
       - name: Deploy to Private GKE Cluster
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
