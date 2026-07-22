@@ -1,9 +1,26 @@
 import os
+import sys
+import logging
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
+# Configure standard Python logging to stream to stdout
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
+)
+
 app = Flask(__name__)
+
+# Redirect Werkzeug HTTP access logs to stdout
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.INFO)
+werkzeug_logger.handlers = []
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s'))
+werkzeug_logger.addHandler(stdout_handler)
 
 MONGO_URI = os.getenv(
     "MONGO_URI", 
@@ -42,10 +59,9 @@ def delete_todo(todo_id):
 def healthz():
     return jsonify({
         "status": "healthy",
-        "version": "1.0.2",
-        "deployed_via": "github_actions",
+        "version": "1.0.3",
+        "deployed_via": "github_actions"
     }), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-    #Update Comment2
