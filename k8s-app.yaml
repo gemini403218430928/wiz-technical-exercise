@@ -15,6 +15,16 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
+
+# 1. Cloud Armor WAF Attachment (BackendConfig CRD)
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: wiz-web-backend-config
+spec:
+  securityPolicy:
+    name: "block-bad-actors"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,10 +51,13 @@ spec:
         - name: MONGO_URI
           value: "mongodb://todo_user:TodoPassword123!@10.0.1.2:27017/todo_db?authSource=todo_db"
 ---
+# 2. Service annotated to link the BackendConfig
 apiVersion: v1
 kind: Service
 metadata:
   name: wiz-web-service
+  annotations:
+    cloud.google.com/backend-config: '{"default": "wiz-web-backend-config"}'
 spec:
   type: ClusterIP
   ports:
