@@ -28,7 +28,6 @@ jobs:
         run: |
           docker build -t us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} ./app
 
-      # 1. Table output in terminal logs for quick review
       - name: Run Trivy Vulnerability Scanner (Table Output)
         uses: aquasecurity/trivy-action@master
         with:
@@ -38,7 +37,6 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
 
-      # 2. Filesystem SARIF Scan (maps app dependencies to app/requirements.txt in Git)
       - name: Run Trivy FS Scanner for App Dependencies
         uses: aquasecurity/trivy-action@master
         with:
@@ -47,14 +45,27 @@ jobs:
           format: 'sarif'
           output: 'trivy-fs-results.sarif'
 
-      - name: Upload App Dependency SARIF to GitHub Security
+      - name: Upload App Dependency SARIF to GitHub Security Tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: 'trivy-fs-results.sarif'
           category: 'trivy-app-dependencies'
 
-      # 3. Deployment steps
+      - name: Run Trivy Container Image SARIF Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+
+      - name: Upload Container Image SARIF to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+          category: 'trivy-container-image'
+
       - name: Authenticate to GCP via Workload Identity Federation
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: google-github-actions/auth@v1
