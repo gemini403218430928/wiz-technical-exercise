@@ -28,15 +28,7 @@ jobs:
         run: |
           docker build -t us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }} ./app
 
-      - name: Run Trivy Vulnerability Scanner (Table Output)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}'
-          format: 'table'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-
+      # 1. Dependency SARIF Scan for GitHub Code Scanning (Requirements.txt)
       - name: Run Trivy FS Scanner for App Dependencies
         uses: aquasecurity/trivy-action@master
         with:
@@ -52,20 +44,26 @@ jobs:
           sarif_file: 'trivy-fs-results.sarif'
           category: 'trivy-app-dependencies'
 
-      - name: Run Trivy Container Image SARIF Scan
+      # 2. Container Image Scan published to GitHub Step Summary (OS & Container CVEs)
+      - name: Run Trivy Container Image Scan (Markdown Report)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'us-central1-docker.pkg.dev/clgcporg10-185/wiz-repo/wiz-web-app:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-image-results.sarif'
+          format: 'table'
+          output: 'trivy-container-report.md'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
 
-      - name: Upload Container Image SARIF to GitHub Security Tab
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Publish Container Scan to GitHub Job Summary
         if: always()
-        with:
-          sarif_file: 'trivy-image-results.sarif'
-          category: 'trivy-container-image'
+        run: |
+          echo "## 🐳 Container Image Vulnerability Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat trivy-container-report.md >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
+      # 3. Authenticate & Deploy to GKE
       - name: Authenticate to GCP via Workload Identity Federation
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: google-github-actions/auth@v1
