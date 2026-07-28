@@ -8,7 +8,7 @@ resource "google_storage_bucket" "backup_bucket" {
   public_access_prevention = "inherited" # Permits public access
 
   labels = {
-    environment = "wiz-demo"
+    environment = "wiz-demo1"
     managed_by  = "github-actions"
   }
 
