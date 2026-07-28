@@ -59,7 +59,7 @@ def delete_todo(todo_id):
 def healthz():
     return jsonify({
         "status": "healthy",
-        "version": "1.0.8",
+        "version": "1.0.9",
         "deployed_via": "github_actions"
     }), 200
 
